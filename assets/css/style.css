@@ -1021,7 +1021,7 @@ b { font-weight: 700; color: var(--volt); }
 .race__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: stretch;
+  align-items: flex-start;
   gap: clamp(28px, 5vw, 56px);
   padding-bottom: clamp(28px, 5vh, 44px);
   border-bottom: 1px solid var(--line);
@@ -1029,23 +1029,25 @@ b { font-weight: 700; color: var(--volt); }
 .race__top-left {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: clamp(20px, 4vh, 32px);
+  gap: clamp(28px, 5vh, 48px);
   flex: 1 1 320px;
 }
-/* 코스 프로필: D-day 옆 카드로. 전체 폭짜리 섹션이던 걸 여기로 줄여 넣었다 */
+/* 코스 프로필: D-day 옆 카드로. 왼쪽 열과 위쪽 기준을 맞춰서 한 묶음처럼 보이게 한다. */
 .race__top .profile {
-  flex: 1 1 360px;
+  flex: 1 1 380px;
   min-width: 280px;
-  padding: 18px 20px;
+  align-self: flex-start;
+  padding: 20px 22px;
   background: var(--ink);
   border: 1px solid var(--line);
 }
 .profile__title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--gray);
-  margin-bottom: 4px;
+  font-family: var(--font-en);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .22em;
+  color: var(--gray-dim);
+  margin-bottom: 10px;
 }
 
 .dday { display: flex; align-items: baseline; gap: 4px; }
