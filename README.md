@@ -109,10 +109,32 @@ python3 -m http.server 8000
 
 ## 배포 (GitHub Pages)
 
-이 폴더를 그대로 올리고 Settings → Pages → Branch를 지정하면 끝입니다.
-빌드 과정이 없고, `data/tracks.json` 이 이미 커밋되어 있습니다.
+이 폴더가 곧 저장소입니다. 푸시하고 Settings → Pages → Source를
+`Deploy from a branch` → `main` / `/ (root)` 로 두면 끝입니다.
+CI 빌드가 없고 `data/tracks.json` 과 `data/bundle.js` 가 이미 커밋되어 있습니다.
 
-지도 배경은 CARTO 다크 타일을 불러오므로 **인터넷 연결이 필요**합니다.
+```bash
+git remote add origin https://github.com/<아이디>/funrun.git
+git push -u origin main
+```
+
+내용을 고친 뒤에는:
+
+```bash
+python3 build/build.py          # 데이터를 바꿨다면
+git add -A && git commit -m "메모 업데이트" && git push
+```
+
+알아둘 것:
+
+- 사이트 주소는 `https://<아이디>.github.io/funrun/` 입니다. 경로를 전부
+  상대경로로 짜서 하위 경로에서도 그대로 동작합니다.
+- 지도 배경은 CARTO 다크 타일을 불러오므로 **인터넷 연결이 필요**합니다.
+- `.nojekyll` 이 있어서 Jekyll 처리를 건너뜁니다.
+- **GPX에는 출발·도착 지점이 들어 있습니다.** 공개 저장소면 이 경로도
+  함께 공개됩니다.
+- 원본 사진(`medal/`, `shoes/`, `me.JPG`)은 `.gitignore` 로 빠져 있어
+  **저장소에 백업되지 않습니다.** 로컬에만 있으니 따로 보관하세요.
 
 ---
 
