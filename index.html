@@ -128,6 +128,57 @@
   </div>
 </section>
 
+<!-- ══════════════════════════════ NEXT RACE ══════════════════════════════ -->
+<section class="section section--race" id="race">
+  <div class="section__head reveal">
+    <p class="section__index">04</p>
+    <h2 class="section__title">ROAD TO<br>대청호</h2>
+    <p class="section__desc" data-race-desc></p>
+  </div>
+
+  <div class="race reveal">
+    <!-- D-DAY + 목표 -->
+    <div class="race__top">
+      <div class="dday">
+        <p class="dday__label">D-</p>
+        <p class="dday__num" data-dday>—</p>
+      </div>
+      <dl class="race__facts" data-race-facts></dl>
+    </div>
+
+    <!-- 훈련 진행률 -->
+    <div class="prog" data-progress></div>
+
+    <!-- 롱런 성장 곡선 -->
+    <div class="growth">
+      <div class="growth__head">
+        <h3 class="growth__title">롱런이 자라는 중</h3>
+        <p class="growth__legend">
+          <span class="growth__key growth__key--plan">계획</span>
+          <span class="growth__key growth__key--done">실제</span>
+        </p>
+      </div>
+      <div class="growth__chart" data-growth></div>
+    </div>
+
+    <!-- 주차별 계획 -->
+    <div class="weeks">
+      <div class="weeks__head">
+        <h3 class="growth__title">11주 계획</h3>
+        <p class="medalrail__hint">← 옆으로 밀어보세요 →</p>
+      </div>
+      <div class="weeks__scroll" data-weeks tabindex="0" aria-label="주차별 훈련 계획"></div>
+    </div>
+
+    <!-- 코스 프로필 -->
+    <div class="profile">
+      <h3 class="growth__title">코스 프로필</h3>
+      <div class="profile__chart" data-profile></div>
+      <p class="profile__note" data-race-note></p>
+    </div>
+  </div>
+</section>
+
 <footer class="foot">
   <p class="foot__mark">FUN RUN</p>
   <p class="foot__meta" data-generated></p>

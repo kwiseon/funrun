@@ -301,6 +301,9 @@ def write_bundle():
         "medalsCsv": read("medals.csv"),
         "coursesCsv": read("courses.csv"),
         "monthlyCsv": read("monthly.csv"),
+        "raceCsv": read("race.csv"),
+        "trainingCsv": read("training.csv"),
+        "raceProfileCsv": read("race_profile.csv"),
     }
     with open(BUNDLE_JS, "w", encoding="utf-8") as f:
         f.write("/* build.py 가 만듭니다. 직접 고치지 마세요. */\n")

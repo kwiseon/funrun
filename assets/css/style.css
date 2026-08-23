@@ -1008,3 +1008,336 @@ b { font-weight: 700; color: var(--volt); }
   .hero__stats { gap: 24px 36px; }
   .medal__note { opacity: 1; }
 }
+
+/* ════════════════════════════ NEXT RACE ════════════════════════════ */
+
+.race {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, 8vh, 88px);
+}
+
+/* ── D-DAY + 목표 ── */
+.race__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: clamp(28px, 6vw, 80px);
+  padding-bottom: clamp(28px, 5vh, 44px);
+  border-bottom: 1px solid var(--line);
+}
+
+.dday { display: flex; align-items: baseline; gap: 4px; }
+.dday__label {
+  font-family: var(--font-en);
+  font-size: clamp(28px, 5vw, 60px);
+  font-weight: 900;
+  letter-spacing: -.03em;
+  color: var(--volt);
+}
+.dday__num {
+  font-family: var(--font-en);
+  font-size: clamp(64px, 13vw, 168px);
+  font-weight: 900;
+  letter-spacing: -.05em;
+  line-height: .85;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 60px rgba(216,255,0,.25);
+}
+
+.race__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(22px, 4vw, 56px);
+  margin: 0;
+}
+.race__facts div { display: flex; flex-direction: column; gap: 7px; }
+.race__facts dt {
+  font-family: var(--font-en);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .22em;
+  color: var(--gray-dim);
+}
+.race__facts dd {
+  margin: 0;
+  font-family: var(--font-en);
+  font-size: clamp(20px, 2.6vw, 30px);
+  font-weight: 900;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.race__facts dd em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--gray-dim);
+  margin-left: 3px;
+}
+
+/* ── 진행률 ── */
+.prog__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(24px, 5vw, 64px);
+  margin-bottom: 22px;
+}
+.prog__label {
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--gray-dim);
+  margin-bottom: 8px;
+}
+.prog__val {
+  font-family: var(--font-en);
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 900;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.prog__val em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-dim);
+  margin-left: 4px;
+}
+
+.prog__bar {
+  position: relative;
+  height: 6px;
+  background: rgba(255,255,255,.06);
+}
+.prog__bar i {
+  display: block;
+  height: 100%;
+  background: var(--volt);
+  box-shadow: 0 0 18px rgba(216,255,0,.5);
+}
+/* 오늘이 어디쯤인지 */
+.prog__bar b {
+  position: absolute;
+  top: -5px; bottom: -5px;
+  width: 2px;
+  background: var(--white);
+}
+
+/* ── 롱런 성장 곡선 ── */
+.growth__head, .weeks__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.growth__title {
+  font-family: var(--font-kr);
+  font-size: clamp(16px, 1.8vw, 20px);
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.growth__legend { display: flex; gap: 16px; }
+.growth__key {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--gray-dim);
+}
+.growth__key::before {
+  content: '';
+  width: 9px; height: 9px;
+  border-radius: 50%;
+}
+.growth__key--plan::before { border: 1.5px solid var(--gray-dim); }
+.growth__key--done::before { background: var(--volt); }
+
+.growth__chart svg { display: block; width: 100%; height: auto; }
+.growth__area { fill: rgba(216,255,0,.07); }
+.growth__line { fill: none; stroke: var(--gray-dim); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.growth__drop { stroke: var(--volt); stroke-width: 1; opacity: .35; }
+.growth__dot.is-plan { fill: var(--black); stroke: var(--gray-dim); stroke-width: 1.5; }
+.growth__dot.is-done { fill: var(--volt); }
+.growth__dot.is-race { fill: var(--race); stroke: var(--white); stroke-width: 2; }
+.growth__val {
+  fill: var(--gray-dim);
+  font-family: var(--font-en);
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+.growth__val.is-race { fill: var(--race); }
+.growth__x {
+  fill: var(--gray-dim);
+  font-family: var(--font-en);
+  font-size: 11px;
+  font-weight: 600;
+  text-anchor: middle;
+  opacity: .75;
+}
+
+/* ── 주차별 카드 ── */
+.weeks__scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+  outline: none;
+}
+.weeks__scroll::-webkit-scrollbar { display: none; }
+.weeks__scroll:focus-visible { outline: 1px solid var(--volt-dim); }
+
+.week {
+  flex: 0 0 auto;
+  width: clamp(230px, 24vw, 280px);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  transition: border-color .35s, background .35s;
+}
+.week.is-past { opacity: .55; }
+.week.is-now {
+  border-color: var(--volt);
+  background: linear-gradient(rgba(216,255,0,.06), transparent 60%), var(--ink);
+}
+
+.week__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.week__no {
+  font-family: var(--font-en);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .2em;
+  color: var(--volt);
+}
+.week__now {
+  padding: 3px 8px;
+  background: var(--volt);
+  color: var(--black);
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.week__span {
+  font-family: var(--font-en);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--gray);
+}
+.week__theme {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--gray-dim);
+}
+
+.week__list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+}
+.sess {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--gray-dim);
+}
+.sess.is-done { color: var(--gray); }
+.sess.is-missed { color: var(--gray-dim); }
+.sess.is-missed .sess__body { text-decoration: line-through; opacity: .6; }
+
+.sess__mark {
+  flex: 0 0 auto;
+  width: 15px; height: 15px;
+  margin-top: 2px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 9px;
+  color: var(--black);
+}
+.sess.is-done .sess__mark { background: var(--volt); border-color: var(--volt); }
+.sess.is-missed .sess__mark { color: var(--race); border-color: var(--race); }
+
+.sess__body { flex: 1 1 auto; min-width: 0; }
+.sess__kind {
+  display: inline-block;
+  margin-right: 5px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--ink-2);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray);
+}
+.sess__kind[data-kind="롱런"]     { background: rgba(216,255,0,.16); color: var(--volt); }
+.sess__kind[data-kind="대회"]     { background: var(--race); color: var(--white); }
+.sess__kind[data-kind="언덕"],
+.sess__kind[data-kind="롤링힐"]   { background: rgba(255,255,255,.12); color: var(--white); }
+
+.sess__km {
+  flex: 0 0 auto;
+  font-family: var(--font-en);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-dim);
+  white-space: nowrap;
+}
+.sess__km s { opacity: .5; margin-right: 3px; }
+
+.week__total {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-en);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+  color: var(--white);
+  text-align: right;
+}
+
+/* ── 코스 프로필 ── */
+.profile__chart svg { display: block; width: 100%; height: auto; margin-top: 18px; }
+.profile__area { fill: rgba(255,45,85,.10); }
+.profile__line { fill: none; stroke: var(--race); stroke-width: 2; stroke-linejoin: round; }
+.profile__label {
+  fill: var(--gray);
+  font-family: var(--font-kr);
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+.profile__tick {
+  fill: var(--gray-dim);
+  font-family: var(--font-en);
+  font-size: 11px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+.profile__note {
+  margin-top: 16px;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--gray-dim);
+}
+
+@media (max-width: 700px) {
+  .race__top { align-items: flex-start; }
+  .growth__val, .growth__x { font-size: 15px; }
+}

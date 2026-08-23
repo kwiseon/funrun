@@ -94,12 +94,16 @@ async function fetchOr(path, fallback) {
 async function loadAll() {
   const bundle = window.FUNRUN_BUNDLE || {};
 
-  const [tracksText, runsText, shoesText, medalsText, monthlyText] = await Promise.all([
+  const [tracksText, runsText, shoesText, medalsText, monthlyText,
+         raceText, trainingText, profileText] = await Promise.all([
     fetchOr('data/tracks.json', bundle.tracks && JSON.stringify(bundle.tracks)),
     fetchOr('data/runs.csv', bundle.runsCsv),
     fetchOr('data/shoes.csv', bundle.shoesCsv),
     fetchOr('data/medals.csv', bundle.medalsCsv),
     fetchOr('data/monthly.csv', bundle.monthlyCsv ?? ''),
+    fetchOr('data/race.csv', bundle.raceCsv ?? ''),
+    fetchOr('data/training.csv', bundle.trainingCsv ?? ''),
+    fetchOr('data/race_profile.csv', bundle.raceProfileCsv ?? ''),
   ]);
 
   const tracks = JSON.parse(tracksText);
@@ -107,6 +111,10 @@ async function loadAll() {
   const shoesCsv = parseCSV(shoesText);
   const medalsCsv = parseCSV(medalsText);
   const monthly = parseCSV(monthlyText);
+  // 대회 정보는 항목/값 두 칸짜리라 객체로 바꿔둔다
+  const race = Object.fromEntries(parseCSV(raceText).map(r => [r['항목'], r['값']]));
+  const training = parseCSV(trainingText);
+  const profile = parseCSV(profileText);
 
   // 날짜를 키로 러닝 메모를 트랙에 합친다
   const notesByDate = Object.fromEntries(runsCsv.map(r => [r['날짜'], r]));
@@ -118,7 +126,7 @@ async function loadAll() {
     run.photo = n['사진'] || '';
   });
 
-  return { tracks, shoes: shoesCsv, medals: medalsCsv, monthly };
+  return { tracks, shoes: shoesCsv, medals: medalsCsv, monthly, race, training, profile };
 }
 
 // ───────────────────────────────────────────── HERO
@@ -401,7 +409,6 @@ function renderMap({ tracks, shoes }) {
     const baseWeight = c.hasRace ? 5 : 3;
 
     const lines = [];
-    let glow = null;
 
     byLength.forEach((run, i) => {
       const latlngs = run.segments;
@@ -410,14 +417,6 @@ function renderMap({ tracks, shoes }) {
       // i 가 클수록(=짧을수록) 더 굵고 진하게
       const weight = baseWeight + i * 1.7;
       const opacity = n === 1 ? .95 : .45 + (i / (n - 1)) * .5;
-
-      if (i === 0) {
-        glow = L.polyline(latlngs, {
-          color, weight: weight + (c.hasRace ? 12 : 8),
-          opacity: c.hasRace ? .22 : .13,
-          lineCap: 'round', lineJoin: 'round', interactive: false,
-        }).addTo(map);
-      }
 
       lines.push({
         run,
@@ -443,7 +442,7 @@ function renderMap({ tracks, shoes }) {
       }).addTo(map);
     }
 
-    layers[c.clusterId] = { glow, lines, hit, pin, color, cluster: c };
+    layers[c.clusterId] = { lines, hit, pin, color, cluster: c };
 
     hit.on('mouseover', () => focus(c.clusterId, false));
     hit.on('click', () => focus(c.clusterId, true));
@@ -470,7 +469,6 @@ function renderMap({ tracks, shoes }) {
         });
         if (on) ln.layer.bringToFront();
       });
-      l.glow.setStyle({ opacity: on ? (l.cluster.hasRace ? .4 : .3) : .06 });
     });
 
     document.querySelectorAll('.courseitem').forEach(el =>
@@ -486,7 +484,6 @@ function renderMap({ tracks, shoes }) {
     if (pinned) return;
     Object.values(layers).forEach(l => {
       l.lines.forEach(ln => ln.layer.setStyle({ opacity: ln.opacity, weight: ln.weight }));
-      l.glow.setStyle({ opacity: l.cluster.hasRace ? .22 : .13 });
     });
     document.querySelectorAll('.courseitem').forEach(el => el.classList.remove('is-active'));
     panelBody.hidden = true;
@@ -595,6 +592,223 @@ function renderMap({ tracks, shoes }) {
   });
 }
 
+// ───────────────────────────────────────────── NEXT RACE
+
+function renderRace({ race, training, profile }) {
+  if (!race['일시'] || !training.length) return;
+
+  const raceDate = new Date(race['일시']);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dday = Math.max(0, Math.round((raceDate - today) / 86400000));
+
+  document.querySelector('[data-dday]').textContent = dday;
+  document.querySelector('[data-race-desc]').textContent =
+    `${race['대회명']} · ${fmtRaceDate(raceDate)}. 11주 훈련 계획과 그날까지의 기록.`;
+  document.querySelector('[data-race-note]').textContent = race['한마디'] || '';
+
+  document.querySelector('[data-race-facts]').innerHTML = [
+    ['DISTANCE', race['거리km'], 'km'],
+    ['GOAL TIME', race['목표시간'], ''],
+    ['GOAL PACE', race['목표페이스'], '/km'],
+  ].map(([k, v, u]) => `
+    <div><dt>${k}</dt><dd>${esc(v)}<em>${u}</em></dd></div>`).join('');
+
+  renderProgress(training, raceDate, today);
+  renderGrowth(training, race);
+  renderWeeks(training, today);
+  renderProfile(profile);
+}
+
+/** '2026-08-17' -> '08.17' */
+function fmtMD(iso) {
+  return iso.slice(5).replace('-', '.');
+}
+
+function fmtRaceDate(d) {
+  const day = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.` +
+         `${String(d.getDate()).padStart(2, '0')} (${day})`;
+}
+
+/** 훈련 진행률: 지난 주차와 완료한 세션 */
+function renderProgress(training, raceDate, today) {
+  const total = training.length;
+  const done = training.filter(t => t['상태'] === '완료').length;
+  const missed = training.filter(t => t['상태'] === '미진행').length;
+  const weeks = Math.max(...training.map(t => +t['주차']));
+  const passed = new Set(training.filter(t => new Date(t['날짜']) <= today)
+                                 .map(t => t['주차'])).size;
+
+  // 계획 대비 실제로 달린 거리
+  const planKm = training.filter(t => t['상태'])
+    .reduce((a, t) => a + (parseFloat(t['계획km']) || 0), 0);
+  const realKm = training.reduce((a, t) => a + (parseFloat(t['실제km']) || 0), 0);
+
+  document.querySelector('[data-progress]').innerHTML = `
+    <div class="prog__row">
+      <div class="prog__item">
+        <p class="prog__label">주차</p>
+        <p class="prog__val">${passed}<em>/ ${weeks}</em></p>
+      </div>
+      <div class="prog__item">
+        <p class="prog__label">완료한 훈련</p>
+        <p class="prog__val">${done}<em>/ ${total}</em></p>
+      </div>
+      <div class="prog__item">
+        <p class="prog__label">거른 훈련</p>
+        <p class="prog__val">${missed}</p>
+      </div>
+      <div class="prog__item">
+        <p class="prog__label">계획 대비</p>
+        <p class="prog__val">${planKm ? Math.round((realKm / planKm) * 100) : 0}<em>%</em></p>
+      </div>
+    </div>
+    <div class="prog__bar">
+      <i style="width:${(done / total) * 100}%"></i>
+      <b style="left:${(passed / weeks) * 100}%"></b>
+    </div>`;
+}
+
+/** 롱런 거리 곡선. 쌓아 올렸다가 대회 전에 줄이는 흐름이 그대로 보인다. */
+function renderGrowth(training, race) {
+  const longs = training.filter(t => t['종류'] === '롱런' || t['종류'] === '대회');
+  if (!longs.length) return;
+
+  const W = 1000, H = 260, PAD_L = 40, PAD_R = 40, PAD_T = 34, PAD_B = 42;
+  const maxKm = Math.max(...longs.map(t => parseFloat(t['계획km']) || 0)) * 1.12;
+  const x = i => PAD_L + (i / (longs.length - 1)) * (W - PAD_L - PAD_R);
+  const y = km => PAD_T + (1 - km / maxKm) * (H - PAD_T - PAD_B);
+
+  const planPts = longs.map((t, i) => [x(i), y(parseFloat(t['계획km']) || 0)]);
+  const line = pts => pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const area = `${line(planPts)} L${x(longs.length - 1)},${H - PAD_B} L${PAD_L},${H - PAD_B} Z`;
+
+  const dots = longs.map((t, i) => {
+    const plan = parseFloat(t['계획km']) || 0;
+    const real = parseFloat(t['실제km']);
+    const isRace = t['종류'] === '대회';
+    const done = !isNaN(real);
+    return `
+      ${done ? `<line class="growth__drop" x1="${x(i)}" y1="${y(plan)}" x2="${x(i)}" y2="${y(real)}"/>` : ''}
+      <circle class="growth__dot ${isRace ? 'is-race' : done ? 'is-done' : 'is-plan'}"
+              cx="${x(i)}" cy="${y(done ? real : plan)}" r="${isRace ? 7 : 5}"/>
+      ${done && real !== plan
+        ? `<text class="growth__val" x="${x(i)}" y="${y(real) + 18}">${real}</text>`
+        : ''}
+      <text class="growth__val ${isRace ? 'is-race' : ''}" x="${x(i)}" y="${y(plan) - 12}">${plan}</text>
+      <text class="growth__x" x="${x(i)}" y="${H - PAD_B + 22}">${t['날짜'].slice(5).replace('-', '.')}</text>`;
+  }).join('');
+
+  document.querySelector('[data-growth]').innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="롱런 거리 변화">
+      <path class="growth__area" d="${area}"/>
+      <path class="growth__line" d="${line(planPts)}"/>
+      ${dots}
+    </svg>`;
+}
+
+/** 주차별 카드. 지난 주는 눌러두고 이번 주를 표시한다. */
+function renderWeeks(training, today) {
+  const box = document.querySelector('[data-weeks]');
+  const byWeek = new Map();
+  training.forEach(t => {
+    if (!byWeek.has(t['주차'])) byWeek.set(t['주차'], []);
+    byWeek.get(t['주차']).push(t);
+  });
+
+  box.innerHTML = [...byWeek.entries()].map(([wk, rows]) => {
+    // 주 범위는 세션 날짜가 아니라 주차의 시작/종료일로 판단한다.
+    // 마지막 훈련이 토요일이어도 일요일까지는 그 주가 '이번 주'다.
+    const start = new Date(rows[0]['시작일']);
+    const end = new Date(rows[0]['종료일']);
+    const isPast = end < today;
+    const isNow = start <= today && today <= end;
+    const planKm = rows.reduce((a, r) => a + (parseFloat(r['계획km']) || 0), 0);
+    const span = `${fmtMD(rows[0]['시작일'])} — ${fmtMD(rows[0]['종료일'])}`;
+
+    return `
+      <article class="week ${isPast ? 'is-past' : ''} ${isNow ? 'is-now' : ''}">
+        <div class="week__head">
+          <p class="week__no">WEEK ${wk}</p>
+          ${isNow ? '<span class="week__now">이번 주</span>' : ''}
+        </div>
+        <p class="week__span">${span}</p>
+        ${rows[0]['주제'] ? `<p class="week__theme">${esc(rows[0]['주제'])}</p>` : ''}
+        <ul class="week__list">
+          ${rows.map(r => {
+            const st = r['상태'];
+            const mark = st === '완료' ? '✓' : st === '미진행' ? '✕' : '';
+            const real = parseFloat(r['실제km']);
+            const plan = parseFloat(r['계획km']);
+            const km = !isNaN(real) && real !== plan
+              ? `<s>${plan}</s> ${real}km`
+              : (r['계획km'] ? `${r['계획km']}km` : '');
+            return `
+              <li class="sess ${st === '완료' ? 'is-done' : ''} ${st === '미진행' ? 'is-missed' : ''}">
+                <span class="sess__mark">${mark}</span>
+                <span class="sess__body">
+                  <b class="sess__kind" data-kind="${esc(r['종류'])}">${esc(r['종류'])}</b>
+                  ${esc(r['훈련'])}
+                </span>
+                <span class="sess__km">${km}</span>
+              </li>`;
+          }).join('')}
+        </ul>
+        <p class="week__total">${planKm.toFixed(planKm % 1 ? 1 : 0)} km</p>
+      </article>`;
+  }).join('');
+
+  // 세로 휠로도 밀리게 (메달 레일과 같은 방식)
+  box.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    const max = box.scrollWidth - box.clientWidth;
+    const next = box.scrollLeft + e.deltaY;
+    if (next < 0 || next > max) return;
+    e.preventDefault();
+    box.scrollLeft = next;
+  }, { passive: false });
+
+  // 이번 주가 보이도록 처음 위치를 맞춘다
+  const focusCard = box.querySelector('.week.is-now')
+    || box.querySelector('.week:not(.is-past)');
+  if (focusCard) box.scrollLeft = Math.max(0, focusCard.offsetLeft - 24);
+}
+
+/** 대회 코스 고도 프로필 */
+function renderProfile(profile) {
+  if (!profile.length) return;
+  const W = 1000, H = 210, PAD_B = 34, PAD_T = 34, PAD_X = 34;
+  const maxKm = Math.max(...profile.map(p => parseFloat(p['km'])));
+  const maxEl = Math.max(...profile.map(p => parseFloat(p['고도'])));
+  const x = km => PAD_X + (km / maxKm) * (W - PAD_X * 2);
+  const y = el => PAD_T + (1 - el / maxEl) * (H - PAD_T - PAD_B);
+  // 양끝 라벨이 잘리지 않게 가장자리에서는 안쪽으로 붙인다
+  const anchor = px => px < W * .12 ? 'start' : px > W * .88 ? 'end' : 'middle';
+
+  const pts = profile.map(p => [x(parseFloat(p['km'])), y(parseFloat(p['고도']))]);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const area = `${line} L${x(maxKm)},${H - PAD_B} L${x(0)},${H - PAD_B} Z`;
+
+  const labels = profile.map(p => {
+    if (!p['라벨']) return '';
+    const px = x(parseFloat(p['km']));
+    return `<text class="profile__label" text-anchor="${anchor(px)}" x="${px}" ` +
+           `y="${y(parseFloat(p['고도'])) - 12}">${esc(p['라벨'])}</text>`;
+  }).join('');
+
+  const ticks = [0, 5, 10, 15, 20].map(km =>
+    `<text class="profile__tick" text-anchor="${anchor(x(km))}" x="${x(km)}" ` +
+    `y="${H - PAD_B + 22}">${km}km</text>`).join('');
+
+  document.querySelector('[data-profile]').innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="대청호 코스 고도 프로필">
+      <path class="profile__area" d="${area}"/>
+      <path class="profile__line" d="${line}"/>
+      ${labels}${ticks}
+    </svg>`;
+}
+
 // ───────────────────────────────────────────── 스크롤 진입 연출
 
 function initReveal() {
@@ -616,6 +830,7 @@ function initReveal() {
     renderMedals(data.medals);
     renderShoes(data.shoes, data.tracks);
     renderMap(data);
+    renderRace(data);
     document.querySelector('[data-generated]').textContent =
       `BUILT ${data.tracks.generatedAt.slice(0, 10).replace(/-/g, '.')}`;
   } catch (err) {
