@@ -1,4 +1,4 @@
-id,이름,브랜드,별명,사진,크롭,메모
-shoe-01,페가수스 41,NIKE,첫 러닝화,images/shoes/shoe-01.jpg,"28,12,66,80",처음으로 제대로 산 러닝화. 밑창이 닳는 걸 보는 재미가 있다.
-shoe-02,디비에이트 나이트로 3,PUMA,데일리,images/shoes/shoe-02.jpg,"9,42,39,49",가볍고 반발이 좋아서 대회용으로 신는다.
-shoe-03,클라우드몬스터 2,ON,장거리용,images/shoes/shoe-02.jpg,"47,14,43,49",쿠션이 두꺼워서 10km 넘어가는 날에 꺼낸다.
+id,이름,브랜드,사이즈,상태,사진,크롭,메모
+shoe-01,리액트 이스케이프 런,NIKE,250,은퇴,images/shoes/shoe-01.jpg,"24,15,70,70",
+shoe-02,디비에이트 나이트로 3 화이트실버,PUMA,255,주력,images/shoes/shoe-02.jpg,"9,47,43,43",
+shoe-03,젤카야노 33 우먼 D,ASICS,255,주력,images/shoes/shoe-02.jpg,"47,14,44,44",

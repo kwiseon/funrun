@@ -262,25 +262,28 @@ function renderShoes(shoes, tracks) {
 
   rack.innerHTML = shoes.map(s => {
     const [x, y, w, h] = (s['크롭'] || '0,0,100,100').split(',').map(Number);
-    // 크롭 사각형(원본 대비 %)을 background-size/position 으로 환산
+    // 크롭 사각형(원본 대비 %)을 background-size/position 으로 환산.
+    // 원본과 칸이 모두 정사각이고 크롭도 정사각(w === h)이면 비율이 안 깨진다.
     const bgSize = `${(100 / w) * 100}% ${(100 / h) * 100}%`;
     const bgPos = `${w < 100 ? (x / (100 - w)) * 100 : 0}% ${h < 100 ? (y / (100 - h)) * 100 : 0}%`;
     const dist = km[s['id']] || 0;
+    const retired = s['상태'] === '은퇴';
 
     return `
-      <article class="shoe" data-shoe="${esc(s['id'])}">
+      <article class="shoe ${retired ? 'shoe--retired' : ''}" data-shoe="${esc(s['id'])}">
         <div class="shoe__cubby">
           <div class="shoe__photo" style="
             background-image:url('${esc(s['사진'])}');
             background-size:${bgSize};
             background-position:${bgPos};"></div>
+          ${s['상태'] ? `<span class="shoe__state">${esc(s['상태'])}</span>` : ''}
         </div>
         <div class="shoe__shelf"></div>
         <div class="shoe__label">
           <div>
             <p class="shoe__brand">${esc(s['브랜드'])}</p>
             <h3 class="shoe__name">${esc(s['이름'])}</h3>
-            ${s['별명'] ? `<p class="shoe__nick">${esc(s['별명'])}</p>` : ''}
+            ${s['사이즈'] ? `<p class="shoe__nick">${esc(s['사이즈'])} mm</p>` : ''}
           </div>
           <p class="shoe__km"><b>${dist.toFixed(1)}</b><span>KM</span></p>
         </div>

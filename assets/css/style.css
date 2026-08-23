@@ -417,10 +417,10 @@ b { font-weight: 700; color: var(--volt); }
   flex-direction: column;
 }
 
-/* 신발장 칸 */
+/* 신발장 칸. 원본 사진이 정사각이라 칸도 1:1 로 둬야 비율이 안 눌린다. */
 .shoe__cubby {
   position: relative;
-  aspect-ratio: 4 / 3.4;
+  aspect-ratio: 1;
   background:
     linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 45%),
     var(--ink);
@@ -446,6 +446,32 @@ b { font-weight: 700; color: var(--volt); }
   transform: scale(1.06);
   filter: none;
 }
+
+/* 은퇴 / 주력 배지 */
+.shoe__state {
+  position: absolute;
+  top: 12px; left: 12px;
+  z-index: 2;
+  padding: 5px 10px;
+  font-family: var(--font-kr);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--black);
+  background: var(--volt);
+  border-radius: 2px;
+}
+.shoe--retired .shoe__state {
+  color: var(--gray);
+  background: transparent;
+  border: 1px solid var(--line);
+  backdrop-filter: blur(4px);
+}
+
+/* 은퇴한 신발은 한 톤 눌러둔다 */
+.shoe--retired .shoe__photo { filter: grayscale(1) brightness(.72); }
+.shoe--retired:hover .shoe__photo { filter: grayscale(.5) brightness(.9); }
+.shoe--retired .shoe__bar i { background: var(--gray-dim); }
 
 /* 선반 바닥면 */
 .shoe__shelf {
