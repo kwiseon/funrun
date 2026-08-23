@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FUN RUN — 나의 달리기 기록</title>
+<meta name="description" content="메달, 신발, 그리고 서울에서 달린 코스의 아카이브">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════ HERO ══════════════════════════════ -->
+<header class="hero">
+  <div class="hero__grain" aria-hidden="true"></div>
+  <canvas class="hero__tracks" aria-hidden="true"></canvas>
+
+  <div class="hero__inner">
+    <p class="hero__eyebrow">FUN RUN — RUNNING ARCHIVE</p>
+
+    <p class="hero__period" data-period>—</p>
+
+    <h1 class="hero__figure">
+      <span class="hero__km" data-total-km>0</span><span class="hero__unit">KM</span>
+    </h1>
+
+    <dl class="hero__stats">
+      <div><dt>RUNS</dt><dd data-run-count>0</dd></div>
+      <div><dt>COURSES</dt><dd data-course-count>0</dd></div>
+      <div><dt>RACES</dt><dd data-race-count>0</dd></div>
+      <div><dt>MEDALS</dt><dd data-medal-count>0</dd></div>
+    </dl>
+
+    <p class="hero__note" data-excluded-note hidden></p>
+  </div>
+
+  <div class="hero__scroll" aria-hidden="true"><span>SCROLL</span></div>
+</header>
+
+<!-- ══════════════════════════════ MEDALS ══════════════════════════════ -->
+<section class="section section--medals" id="medals">
+  <div class="section__head reveal">
+    <p class="section__index">01</p>
+    <h2 class="section__title">MEDAL<br>WALL</h2>
+    <p class="section__desc">완주하고 목에 걸었던 것들. <span data-medal-years></span></p>
+  </div>
+
+  <div class="medalrail reveal">
+    <div class="medalrail__scroll" data-medal-wall tabindex="0"
+         aria-label="메달 목록, 좌우로 스크롤"></div>
+    <p class="medalrail__hint">← 옆으로 밀어보세요 →</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ SHOES ══════════════════════════════ -->
+<section class="section section--shoes" id="shoes">
+  <div class="section__head reveal">
+    <p class="section__index">02</p>
+    <h2 class="section__title">SHOE<br>RACK</h2>
+    <p class="section__desc">이 거리를 같이 달린 신발들.</p>
+  </div>
+
+  <div class="rack reveal" data-shoe-rack></div>
+</section>
+
+<!-- ══════════════════════════════ MAP ══════════════════════════════ -->
+<section class="section section--map" id="map">
+  <div class="section__head reveal">
+    <p class="section__index">03</p>
+    <h2 class="section__title">SEOUL<br>ROUTES</h2>
+    <p class="section__desc">
+      서울에서 달린 코스. 비슷한 코스는 <b>가장 길게 달린 기록</b>으로 하나만 그렸어요.
+      선에 마우스를 올리면 자세히 볼 수 있습니다.
+    </p>
+  </div>
+
+  <div class="maparea">
+    <div class="maparea__canvas" id="leaflet"></div>
+
+    <div class="legend">
+      <span class="legend__item"><i class="legend__line legend__line--normal"></i>일반 코스</span>
+      <span class="legend__item"><i class="legend__line legend__line--race"></i>🏅 대회 코스</span>
+      <span class="legend__hint">선 굵기 = 달린 횟수</span>
+    </div>
+
+    <aside class="panel" data-panel>
+      <div class="panel__empty" data-panel-empty>
+        <p class="panel__emptyicon">↖</p>
+        <p>지도 위의 코스를 짚어보세요</p>
+      </div>
+      <div class="panel__body" data-panel-body hidden></div>
+    </aside>
+
+    <ol class="courselist" data-course-list aria-label="코스 목록"></ol>
+  </div>
+</section>
+
+<footer class="foot">
+  <p class="foot__mark">FUN RUN</p>
+  <p class="foot__meta" data-generated></p>
+</footer>
+
+<!-- 서버 없이 file:// 로 열면 fetch 가 막힌다. 그때 쓰는 데이터 사본. -->
+<script src="data/bundle.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

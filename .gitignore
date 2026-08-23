@@ -1,0 +1,8 @@
+# 원본 사진은 로컬에만 둡니다. 웹에는 images/ 의 축소본을 씁니다.
+# 맨 앞 / 는 최상위 폴더만 가리킵니다. 없으면 images/shoes/ 까지 함께 걸립니다.
+/medal/
+/shoes/
+/me.JPG
+
+# macOS
+.DS_Store
