@@ -94,12 +94,65 @@ def decode_rgba(path):
     return w, h, out
 
 
+def _paeth(a, b, c):
+    p = a + b - c
+    pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+    if pa <= pb and pa <= pc:
+        return a
+    return b if pb <= pc else c
+
+
+def _best_filter(line, prev, bpp):
+    """5가지 PNG 스캔라인 필터 중 압축이 가장 잘 될 후보를 고른다.
+
+    필터 없이(타입 0) 그대로 압축하면 zlib 이 원본 픽셀 패턴을 그대로
+    떠안아야 해서, 금속 텍스처처럼 색이 완만하게 이어지는 이미지에서
+    픽셀당 2바이트에 육박하는 형편없는 압축률이 나온다 (메달 PNG가
+    자르기 전보다 오히려 커지는 원인이었다). '절댓값 합이 최소인 필터를
+    고른다'는 표준 휴리스티브를 그대로 구현했다."""
+    stride = len(line)
+    cands = [(0, bytes(line))]
+
+    sub = bytearray(stride)
+    for x in range(stride):
+        a = line[x - bpp] if x >= bpp else 0
+        sub[x] = (line[x] - a) & 255
+    cands.append((1, bytes(sub)))
+
+    up = bytearray(stride)
+    for x in range(stride):
+        up[x] = (line[x] - prev[x]) & 255
+    cands.append((2, bytes(up)))
+
+    avg = bytearray(stride)
+    for x in range(stride):
+        a = line[x - bpp] if x >= bpp else 0
+        avg[x] = (line[x] - ((a + prev[x]) >> 1)) & 255
+    cands.append((3, bytes(avg)))
+
+    pae = bytearray(stride)
+    for x in range(stride):
+        a = line[x - bpp] if x >= bpp else 0
+        c = prev[x - bpp] if x >= bpp else 0
+        pae[x] = (line[x] - _paeth(a, prev[x], c)) & 255
+    cands.append((4, bytes(pae)))
+
+    def score(b):
+        return sum(v if v < 128 else 256 - v for v in b)
+
+    return min(cands, key=lambda c: score(c[1]))
+
+
 def encode_rgba(path, w, h, px):
-    stride = w * 4
+    bpp, stride = 4, w * 4
     raw = bytearray()
+    prev = bytearray(stride)
     for y in range(h):
-        raw.append(0)                       # 필터 없음
-        raw += px[y * stride:(y + 1) * stride]
+        line = px[y * stride:(y + 1) * stride]
+        ftype, fline = _best_filter(line, prev, bpp)
+        raw.append(ftype)
+        raw += fline
+        prev = line
 
     def chunk(typ, data):
         return (struct.pack(">I", len(data)) + typ + data +

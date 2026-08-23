@@ -785,7 +785,7 @@ function renderWeeks(training, today) {
 /** 대회 코스 고도 프로필 */
 function renderProfile(profile) {
   if (!profile.length) return;
-  const W = 620, H = 170, PAD_B = 26, PAD_T = 24, PAD_X = 20;
+  const W = 1000, H = 210, PAD_B = 34, PAD_T = 34, PAD_X = 34;
   const maxKm = Math.max(...profile.map(p => parseFloat(p['km'])));
   const maxEl = Math.max(...profile.map(p => parseFloat(p['고도'])));
   const x = km => PAD_X + (km / maxKm) * (W - PAD_X * 2);

@@ -623,7 +623,9 @@ b { font-weight: 700; color: var(--volt); }
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 20px;
-  align-items: stretch;
+  /* stretch 로 두면 패널 내용이 지도 높이를 넘어갈 때 잘리거나
+     스스로 스크롤이 생긴다. 각자 필요한 만큼만 차지하게 한다. */
+  align-items: start;
 }
 
 .maparea__canvas {
@@ -687,16 +689,19 @@ b { font-weight: 700; color: var(--volt); }
 }
 
 /* ── 상세 패널 ── */
+/* 페이지 스크롤 하나로 충분하다. 코스 내용이 길어져도 패널이
+   자체 스크롤을 갖지 않고 그냥 늘어나게 둔다 (중첩 스크롤 방지). */
 .panel {
+  display: flex;
+  flex-direction: column;
   background: var(--ink);
   border: 1px solid var(--line);
   padding: 26px;
-  overflow-y: auto;
-  max-height: clamp(480px, 78vh, 860px);
+  min-height: clamp(480px, 78vh, 860px);
 }
 
 .panel__empty {
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1000,7 +1005,7 @@ b { font-weight: 700; color: var(--volt); }
 @media (max-width: 900px) {
   .maparea { grid-template-columns: 1fr; }
   .maparea__canvas { height: 62vh; }
-  .panel { max-height: none; }
+  .panel { min-height: 0; }
   .legend { font-size: 10.5px; padding: 11px 13px; }
 }
 
@@ -1021,33 +1026,10 @@ b { font-weight: 700; color: var(--volt); }
 .race__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: clamp(28px, 5vw, 56px);
+  align-items: flex-end;
+  gap: clamp(28px, 6vw, 80px);
   padding-bottom: clamp(28px, 5vh, 44px);
   border-bottom: 1px solid var(--line);
-}
-.race__top-left {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(28px, 5vh, 48px);
-  flex: 1 1 320px;
-}
-/* 코스 프로필: D-day 옆 카드로. 왼쪽 열과 위쪽 기준을 맞춰서 한 묶음처럼 보이게 한다. */
-.race__top .profile {
-  flex: 1 1 380px;
-  min-width: 280px;
-  align-self: flex-start;
-  padding: 20px 22px;
-  background: var(--ink);
-  border: 1px solid var(--line);
-}
-.profile__title {
-  font-family: var(--font-en);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .22em;
-  color: var(--gray-dim);
-  margin-bottom: 10px;
 }
 
 .dday { display: flex; align-items: baseline; gap: 4px; }
@@ -1347,7 +1329,7 @@ b { font-weight: 700; color: var(--volt); }
 .week__total.is-plan { color: var(--gray); }
 
 /* ── 코스 프로필 ── */
-.profile__chart svg { display: block; width: 100%; height: auto; margin-top: 8px; }
+.profile__chart svg { display: block; width: 100%; height: auto; margin-top: 18px; }
 .profile__area { fill: rgba(255,45,85,.10); }
 .profile__line { fill: none; stroke: var(--race); stroke-width: 2; stroke-linejoin: round; }
 .profile__label {
@@ -1365,9 +1347,9 @@ b { font-weight: 700; color: var(--volt); }
   text-anchor: middle;
 }
 .profile__note {
-  margin-top: 10px;
-  font-size: 11.5px;
-  line-height: 1.65;
+  margin-top: 16px;
+  font-size: 12.5px;
+  line-height: 1.8;
   color: var(--gray-dim);
 }
 
