@@ -156,11 +156,6 @@ function renderHero({ tracks, medals, monthly }) {
     parts.push(`※ 위 거리는 월별 기록의 합계예요. 아래 지도에는 GPX 가 남아있는 ` +
                `${s.runCount}회(${s.totalKm}km)만 그렸습니다.`);
   }
-  if (s.excludedCount > 0) {
-    const outside = tracks.runs.filter(r => !r.inSeoul);
-    parts.push(`서울 밖에서 달린 ${s.excludedCount}회` +
-               `(${outside.map(r => r.date.replace(/-/g, '.')).join(', ')})는 지도에서 뺐어요.`);
-  }
   if (parts.length) { note.textContent = parts.join(' '); note.hidden = false; }
 
   countUp(document.querySelector('[data-total-km]'), totalKm || s.totalKm);
