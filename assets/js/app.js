@@ -391,44 +391,59 @@ function renderMap({ tracks, shoes }) {
   const allBounds = [];
 
   clusters.forEach(c => {
-    const rep = runById[c.repRunId].inSeoul
-      ? runById[c.repRunId]
-      : c.runs.slice().sort((a, b) => b.distanceKm - a.distanceKm)[0];
-
-    // 기록이 끊긴 지점에서 나뉜 여러 구간. Leaflet 은 배열의 배열을
-    // 이어지지 않은 선들로 그려준다.
-    const latlngs = rep.segments;
-    allBounds.push(...latlngs.flat());
-
-    // 달린 횟수만큼 선이 굵어진다
-    const weight = (c.hasRace ? 5 : 3) + (c.runs.length - 1) * 1.6;
     const color = c.hasRace ? RACE : VOLT;
 
-    // 글로우용 밑선
-    const glow = L.polyline(latlngs, {
-      color, weight: weight + (c.hasRace ? 12 : 8),
-      opacity: c.hasRace ? .22 : .13, lineCap: 'round', lineJoin: 'round',
-      interactive: false,
-    }).addTo(map);
+    // 같은 코스를 길이만 늘려가며 달린 경우가 있다. 긴 것부터 옅게 깔고
+    // 짧은 것을 위에 밝게 얹으면, 여러 번 지난 공통 구간이 가장 밝게 남고
+    // 한 번만 다녀온 연장 구간이 옅어져 "점점 멀어진" 모양이 그대로 보인다.
+    const byLength = c.runs.slice().sort((a, b) => b.distanceKm - a.distanceKm);
+    const n = byLength.length;
+    const baseWeight = c.hasRace ? 5 : 3;
 
-    const line = L.polyline(latlngs, {
-      color, weight, opacity: .95, lineCap: 'round', lineJoin: 'round',
-      interactive: false,
-    }).addTo(map);
+    const lines = [];
+    let glow = null;
 
-    // 얇은 선은 마우스로 잡기 어려워서 투명한 굵은 선을 겹쳐둔다
-    const hit = L.polyline(latlngs, {
+    byLength.forEach((run, i) => {
+      const latlngs = run.segments;
+      allBounds.push(...latlngs.flat());
+
+      // i 가 클수록(=짧을수록) 더 굵고 진하게
+      const weight = baseWeight + i * 1.7;
+      const opacity = n === 1 ? .95 : .45 + (i / (n - 1)) * .5;
+
+      if (i === 0) {
+        glow = L.polyline(latlngs, {
+          color, weight: weight + (c.hasRace ? 12 : 8),
+          opacity: c.hasRace ? .22 : .13,
+          lineCap: 'round', lineJoin: 'round', interactive: false,
+        }).addTo(map);
+      }
+
+      lines.push({
+        run,
+        weight,
+        opacity,
+        layer: L.polyline(latlngs, {
+          color, weight, opacity,
+          lineCap: 'round', lineJoin: 'round', interactive: false,
+        }).addTo(map),
+      });
+    });
+
+    // 얇은 선은 마우스로 잡기 어려워서 투명한 굵은 선을 겹쳐둔다.
+    // 가장 긴 트랙에 걸어야 코스 전체가 잡힌다.
+    const hit = L.polyline(byLength[0].segments, {
       color: '#000', weight: 26, opacity: 0, lineCap: 'round',
     }).addTo(map);
 
     let pin = null;
     if (c.hasRace) {
-      pin = L.marker(latlngs[0][0], {
+      pin = L.marker(byLength[0].segments[0][0], {
         icon: L.divIcon({ className: '', html: '<div class="racepin">🏅</div>', iconSize: [30, 30], iconAnchor: [15, 15] }),
       }).addTo(map);
     }
 
-    layers[c.clusterId] = { glow, line, hit, pin, weight, color, cluster: c };
+    layers[c.clusterId] = { glow, lines, hit, pin, color, cluster: c };
 
     hit.on('mouseover', () => focus(c.clusterId, false));
     hit.on('click', () => focus(c.clusterId, true));
@@ -448,9 +463,14 @@ function renderMap({ tracks, shoes }) {
 
     Object.entries(layers).forEach(([id, l]) => {
       const on = id === clusterId;
-      l.line.setStyle({ opacity: on ? 1 : .22, weight: on ? l.weight + 2 : l.weight });
+      l.lines.forEach(ln => {
+        ln.layer.setStyle({
+          opacity: on ? Math.min(1, ln.opacity + .25) : ln.opacity * .3,
+          weight: on ? ln.weight + 2 : ln.weight,
+        });
+        if (on) ln.layer.bringToFront();
+      });
       l.glow.setStyle({ opacity: on ? (l.cluster.hasRace ? .4 : .3) : .06 });
-      if (on) l.line.bringToFront();
     });
 
     document.querySelectorAll('.courseitem').forEach(el =>
@@ -465,7 +485,7 @@ function renderMap({ tracks, shoes }) {
   function clearFocus() {
     if (pinned) return;
     Object.values(layers).forEach(l => {
-      l.line.setStyle({ opacity: .95, weight: l.weight });
+      l.lines.forEach(ln => ln.layer.setStyle({ opacity: ln.opacity, weight: ln.weight }));
       l.glow.setStyle({ opacity: l.cluster.hasRace ? .22 : .13 });
     });
     document.querySelectorAll('.courseitem').forEach(el => el.classList.remove('is-active'));
@@ -475,6 +495,34 @@ function renderMap({ tracks, shoes }) {
 
   // 레이어 사이를 지날 때마다 터지는 map 'mouseout' 대신 컨테이너 이탈만 본다
   mapEl.addEventListener('mouseleave', clearFocus);
+
+  /** 같은 코스를 길이만 늘려가며 달렸는지 (가장 긴 쪽이 짧은 쪽의 1.5배 이상) */
+  function isProgressive(runs) {
+    if (runs.length < 2) return false;
+    const d = runs.map(r => r.distanceKm);
+    return Math.max(...d) / Math.min(...d) >= 1.5;
+  }
+
+  /** 점점 멀어지는 코스의 단계 목록 */
+  function stagesHTML(c, runs) {
+    if (!isProgressive(runs)) return '';
+    const asc = runs.slice().sort((a, b) => a.distanceKm - b.distanceKm);
+    const max = asc[asc.length - 1].distanceKm;
+    const names = c.stages || [];
+    return `
+      <div class="stages">
+        <p class="stages__title">${asc.length}단계로 늘려온 코스</p>
+        ${asc.map((r, i) => `
+          <div class="stage">
+            <span class="stage__no">${i + 1}</span>
+            <div class="stage__body">
+              <div class="stage__bar"><i style="width:${(r.distanceKm / max) * 100}%"></i></div>
+              <p class="stage__name">${esc(names[i] || fmtDate(r.date))}</p>
+            </div>
+            <span class="stage__km">${fmtKm(r.distanceKm)}<em>km</em></span>
+          </div>`).join('')}
+      </div>`;
+  }
 
   function panelHTML(c) {
     const runs = c.runs.slice().sort((a, b) => b.date.localeCompare(a.date));
@@ -496,11 +544,12 @@ function renderMap({ tracks, shoes }) {
         <div class="panel__fig"><span>AVG PACE</span><b>${fmtPace(avgPace)}</b></div>
       </div>
 
-      ${runs.length > 1 ? `
+      ${stagesHTML(c, runs)}
+
+      ${runs.length > 1 && !isProgressive(runs) ? `
         <p class="panel__repeat">
           이 코스를 <b>${runs.length}번</b> 달렸어요.
           가장 길게 달린 날은 ${fmtDate(longest.date)}, <b>${fmtKm(longest.distanceKm)}km</b>.
-          지도에는 그날의 경로를 그렸습니다.
         </p>` : ''}
 
       <div class="panel__log">
@@ -541,7 +590,7 @@ function renderMap({ tracks, shoes }) {
     el.addEventListener('mouseleave', clearFocus);
     el.addEventListener('click', () => {
       focus(el.dataset.cluster, true);
-      map.fitBounds(layers[el.dataset.cluster].line.getBounds(), { padding: [60, 60] });
+      map.fitBounds(layers[el.dataset.cluster].lines[0].layer.getBounds(), { padding: [60, 60] });
     });
   });
 }

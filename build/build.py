@@ -36,10 +36,7 @@ SEOUL_BBOX = (37.42, 126.76, 37.71, 127.19)  # min_lat, min_lon, max_lat, max_lo
 
 # 기록에서 빼기로 한 러닝 (날짜 기준). 지도·집계·코스 목록에서 모두 제외한다.
 # GPX 원본은 map/ 에 그대로 두므로, 여기서 지우면 다시 살아난다.
-EXCLUDED_DATES = {
-    "2026-08-01",   # 종로 — 성북 언덕
-    "2026-08-23",   # 종로 — 성북 언덕
-}
+EXCLUDED_DATES = set()
 
 COURSES_CSV = os.path.join(ROOT, "data", "courses.csv")
 
@@ -51,7 +48,8 @@ def load_courses():
         return {}
     with open(COURSES_CSV, encoding="utf-8-sig", newline="") as f:
         return {r["대표날짜"].strip(): (r.get("코스명", "").strip(),
-                                        r.get("설명", "").strip())
+                                        r.get("설명", "").strip(),
+                                        r.get("단계", "").strip())
                 for r in csv.DictReader(f) if r.get("대표날짜")}
 
 
@@ -172,12 +170,29 @@ def grid_cells(points, size_m):
     return cells
 
 
+# 짧은 코스가 긴 코스 안에 이만큼 들어있으면 같은 코스의 짧은 버전으로 본다
+CONTAINMENT_THRESHOLD = 0.85
+# 다만 거리 차가 이보다 크면 별개 코스로 둔다. 동네에서 잠깐 뛴 2km 러닝이
+# 같은 길을 지난다는 이유로 8km 코스에 흡수되는 걸 막는다.
+MIN_LENGTH_RATIO = 0.35
+
+
 def similarity(a, b):
     """Jaccard 유사도. overlap coefficient 는 짧은 코스를 긴 코스에 통째로
     흡수시켜서 안 쓴다 (2km 러닝이 14km 러닝과 0.95 가 나온다)."""
     if not a or not b:
         return 0.0
     return len(a & b) / len(a | b)
+
+
+def containment(short, long_):
+    """짧은 쪽이 긴 쪽에 얼마나 들어있는지.
+
+    같은 곳에서 출발해 점점 멀리 다녀오는 코스는 길이 차가 커서 Jaccard 가
+    낮게 나온다 (5km 와 12km 가 0.25). 포함률로 보면 89% 라 한 계열이다."""
+    if not short:
+        return 0.0
+    return len(short & long_) / len(short)
 
 
 def cluster(runs):
@@ -191,15 +206,24 @@ def cluster(runs):
     groups = []        # 각 클러스터의 멤버 인덱스 목록
 
     for i in order:
-        best_score, best_group = 0.0, None
+        best_score, best_group, best_why = 0.0, None, ""
         for gi, rep in enumerate(reps):
-            s = similarity(runs[i]["_cells"], runs[rep]["_cells"])
-            if s > best_score:
-                best_score, best_group = s, gi
-        if best_group is not None and best_score >= SIMILARITY_THRESHOLD:
+            # 대표는 항상 더 긴 코스이므로 포함률은 한 방향만 본다
+            jac = similarity(runs[i]["_cells"], runs[rep]["_cells"])
+            con = containment(runs[i]["_cells"], runs[rep]["_cells"])
+            ratio = runs[i]["distanceKm"] / runs[rep]["distanceKm"]
+            score, why = (jac, f"jaccard {jac:.2f}")
+            if (con >= CONTAINMENT_THRESHOLD and ratio >= MIN_LENGTH_RATIO
+                    and con > score):
+                score, why = con, f"포함률 {con:.0%}, 길이비 {ratio:.0%}"
+            if score > best_score:
+                best_score, best_group, best_why = score, gi, why
+        merged = best_group is not None and (
+            best_score >= SIMILARITY_THRESHOLD or best_score >= CONTAINMENT_THRESHOLD)
+        if merged:
             groups[best_group].append(i)
             print(f"  merge: {runs[i]['date']} -> {runs[reps[best_group]]['date']}"
-                  f"  (jaccard {best_score:.2f})")
+                  f"  ({best_why})")
         else:
             reps.append(i)
             groups.append([i])
@@ -365,14 +389,17 @@ def main():
     for gi, idxs in enumerate(groups):
         members = sorted((runs[i] for i in idxs), key=lambda r: -r["distanceKm"])
         rep = members[0]
-        name, note = courses.get(rep["date"], ("", ""))
+        name, note, stages = courses.get(rep["date"], ("", "", ""))
         if not name:
             name = f"코스 {gi + 1}"
+            note, stages = "", ""
             print(f"  ! data/courses.csv 에 {rep['date']} 행이 없어 임시 이름을 씁니다")
         clusters.append({
             "clusterId": f"c{gi:02d}",
             "name": name,
             "note": note,
+            # '|' 로 구분한 단계 이름. 거리가 짧은 순.
+            "stages": [t.strip() for t in stages.split("|") if t.strip()],
             "repRunId": rep["id"],
             "runCount": len(members),
             "runIds": [m["id"] for m in sorted(members, key=lambda r: r["date"])],
