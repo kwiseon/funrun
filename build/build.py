@@ -34,19 +34,25 @@ SIMILARITY_THRESHOLD = 0.40
 # 지도에서 제외할 지역 (서울 밖). bbox 로 판정.
 SEOUL_BBOX = (37.42, 126.76, 37.71, 127.19)  # min_lat, min_lon, max_lat, max_lon
 
-# 클러스터 대표 코스에 붙일 이름. 대표 트랙의 날짜를 키로 쓴다.
-# 새 GPX 가 들어와 대표가 바뀌면 여기도 갱신해주면 된다.
-COURSE_NAMES = {
-    "2026-02-20": "여의도 — 반포 한강",
-    "2026-03-21": "일산 호수공원",
-    "2026-04-05": "광화문 — 동대문",
-    "2026-05-16": "한강 — 성수 롱런",
-    "2026-05-30": "안양천 숏코스",
-    "2026-06-03": "안양천 — 한강 합수부",
-    "2026-07-24": "성북천 이지런",
-    "2026-07-26": "청계천 상류",
-    "2026-08-23": "종로 — 성북 언덕",
+# 기록에서 빼기로 한 러닝 (날짜 기준). 지도·집계·코스 목록에서 모두 제외한다.
+# GPX 원본은 map/ 에 그대로 두므로, 여기서 지우면 다시 살아난다.
+EXCLUDED_DATES = {
+    "2026-08-01",   # 종로 — 성북 언덕
+    "2026-08-23",   # 종로 — 성북 언덕
 }
+
+COURSES_CSV = os.path.join(ROOT, "data", "courses.csv")
+
+
+def load_courses():
+    """코스 이름과 설명을 data/courses.csv 에서 읽는다.
+    클러스터 대표 러닝의 날짜를 키로 쓴다."""
+    if not os.path.exists(COURSES_CSV):
+        return {}
+    with open(COURSES_CSV, encoding="utf-8-sig", newline="") as f:
+        return {r["대표날짜"].strip(): (r.get("코스명", "").strip(),
+                                        r.get("설명", "").strip())
+                for r in csv.DictReader(f) if r.get("대표날짜")}
 
 
 # ---------------------------------------------------------------- 기하 유틸
@@ -269,6 +275,8 @@ def write_bundle():
         "runsCsv": read("runs.csv"),
         "shoesCsv": read("shoes.csv"),
         "medalsCsv": read("medals.csv"),
+        "coursesCsv": read("courses.csv"),
+        "monthlyCsv": read("monthly.csv"),
     }
     with open(BUNDLE_JS, "w", encoding="utf-8") as f:
         f.write("/* build.py 가 만듭니다. 직접 고치지 마세요. */\n")
@@ -294,6 +302,10 @@ def main():
             continue
 
         date_str = name[:8]
+        date_iso = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+        if date_iso in EXCLUDED_DATES:
+            print(f"  제외: {name[:30]}")
+            continue
         is_race = "(대회)" in name
 
         stamps = [parse_iso(t) for t in times]
@@ -348,13 +360,19 @@ def main():
     print("\n코스 클러스터링...")
     groups = cluster(runs)
 
+    courses = load_courses()
     clusters = []
     for gi, idxs in enumerate(groups):
         members = sorted((runs[i] for i in idxs), key=lambda r: -r["distanceKm"])
         rep = members[0]
+        name, note = courses.get(rep["date"], ("", ""))
+        if not name:
+            name = f"코스 {gi + 1}"
+            print(f"  ! data/courses.csv 에 {rep['date']} 행이 없어 임시 이름을 씁니다")
         clusters.append({
             "clusterId": f"c{gi:02d}",
-            "name": COURSE_NAMES.get(rep["date"], f"코스 {gi + 1}"),
+            "name": name,
+            "note": note,
             "repRunId": rep["id"],
             "runCount": len(members),
             "runIds": [m["id"] for m in sorted(members, key=lambda r: r["date"])],

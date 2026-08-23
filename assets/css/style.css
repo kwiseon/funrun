@@ -151,6 +151,62 @@ b { font-weight: 700; color: var(--volt); }
   color: var(--volt);
 }
 
+/* 월별 거리 막대 */
+.monthbar {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(8px, 1.6vw, 22px);
+  margin-bottom: clamp(28px, 5vh, 48px);
+  max-width: 720px;
+}
+.monthbar__col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.monthbar__km {
+  font-family: var(--font-en);
+  font-size: clamp(9px, 1vw, 11px);
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: var(--gray-dim);
+  font-variant-numeric: tabular-nums;
+}
+.monthbar__track {
+  width: 100%;
+  height: clamp(46px, 8vh, 76px);
+  display: flex;
+  align-items: flex-end;
+  /* 채워지지 않은 부분이 위로 갈수록 밝으면 막대가 거꾸로 읽힌다.
+     균일하게 아주 옅은 톤으로 둔다. */
+  background: rgba(255, 255, 255, .045);
+}
+.monthbar__track i {
+  display: block;
+  width: 100%;
+  background: var(--volt);
+  transition: height .9s cubic-bezier(.2,.7,.2,1);
+}
+.monthbar__label {
+  font-family: var(--font-en);
+  font-size: clamp(9px, 1vw, 10.5px);
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--gray-dim);
+  white-space: nowrap;
+}
+
+/* 코스 설명 */
+.panel__note {
+  margin: -8px 0 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--gray);
+}
+
 .hero__stats {
   display: flex;
   flex-wrap: wrap;
@@ -359,6 +415,9 @@ b { font-weight: 700; color: var(--volt); }
   width: 100%;
   aspect-ratio: 1;
   object-fit: contain;
+  /* 이미지마다 여백이 달라 가운데 정렬하면 걸이 끈과 어긋난다.
+     여백을 잘라낸 뒤 위쪽에 붙여, 모든 메달이 같은 선에서 걸리게 한다. */
+  object-position: top center;
   transition: transform .5s cubic-bezier(.2,.7,.2,1), filter .5s;
   /* 검은 배경에 묻히지 않게 살짝만 눌러두고, 은은한 광을 깔아둔다 */
   filter: grayscale(.4) brightness(.95)
@@ -480,6 +539,8 @@ b { font-weight: 700; color: var(--volt); }
   border-radius: 0 0 3px 3px;
 }
 
+.shoe__label > div { min-width: 0; }
+
 .shoe__label {
   display: flex;
   justify-content: space-between;
@@ -497,10 +558,13 @@ b { font-weight: 700; color: var(--volt); }
   margin-bottom: 8px;
 }
 .shoe__name {
-  font-size: clamp(17px, 1.8vw, 21px);
+  font-size: clamp(14px, 1.35vw, 16.5px);
   font-weight: 700;
-  letter-spacing: -.01em;
-  line-height: 1.3;
+  letter-spacing: -.015em;
+  line-height: 1.35;
+  /* 이름이 길어 두 줄이 되면 아래 요소들이 밀려 칸끼리 어긋난다.
+     두 줄 자리를 미리 잡아두어 길이와 상관없이 정렬을 맞춘다. */
+  min-height: 2.7em;
 }
 .shoe__nick {
   margin-top: 7px;

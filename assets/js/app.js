@@ -94,17 +94,19 @@ async function fetchOr(path, fallback) {
 async function loadAll() {
   const bundle = window.FUNRUN_BUNDLE || {};
 
-  const [tracksText, runsText, shoesText, medalsText] = await Promise.all([
+  const [tracksText, runsText, shoesText, medalsText, monthlyText] = await Promise.all([
     fetchOr('data/tracks.json', bundle.tracks && JSON.stringify(bundle.tracks)),
     fetchOr('data/runs.csv', bundle.runsCsv),
     fetchOr('data/shoes.csv', bundle.shoesCsv),
     fetchOr('data/medals.csv', bundle.medalsCsv),
+    fetchOr('data/monthly.csv', bundle.monthlyCsv ?? ''),
   ]);
 
   const tracks = JSON.parse(tracksText);
   const runsCsv = parseCSV(runsText);
   const shoesCsv = parseCSV(shoesText);
   const medalsCsv = parseCSV(medalsText);
+  const monthly = parseCSV(monthlyText);
 
   // 날짜를 키로 러닝 메모를 트랙에 합친다
   const notesByDate = Object.fromEntries(runsCsv.map(r => [r['날짜'], r]));
@@ -116,16 +118,30 @@ async function loadAll() {
     run.photo = n['사진'] || '';
   });
 
-  return { tracks, shoes: shoesCsv, medals: medalsCsv };
+  return { tracks, shoes: shoesCsv, medals: medalsCsv, monthly };
 }
 
 // ───────────────────────────────────────────── HERO
 
-function renderHero({ tracks, medals }) {
+function renderHero({ tracks, medals, monthly }) {
   const s = tracks.summary;
 
-  document.querySelector('[data-period]').textContent =
-    `${s.firstDate.replace(/-/g, '.')} — ${s.lastDate.replace(/-/g, '.')}`;
+  // 히어로 숫자는 월별 기록(data/monthly.csv)이 기준이다.
+  // GPX 는 일부 러닝만 남아있어서 지도·코스 통계에만 쓴다.
+  const months = monthly
+    .filter(m => m['연월'])
+    .sort((a, b) => a['연월'].localeCompare(b['연월']));
+  const totalKm = months.reduce((sum, m) => sum + (parseFloat(m['거리km']) || 0), 0);
+
+  if (months.length) {
+    const first = `${months[0]['연월']}-01`;
+    const last = months[months.length - 1]['기준일'] || monthEnd(months[months.length - 1]['연월']);
+    document.querySelector('[data-period]').textContent =
+      `${first.replace(/-/g, '.')} — ${last.replace(/-/g, '.')}`;
+  } else {
+    document.querySelector('[data-period]').textContent =
+      `${s.firstDate.replace(/-/g, '.')} — ${s.lastDate.replace(/-/g, '.')}`;
+  }
 
   document.querySelector('[data-run-count]').textContent = s.runCount;
   document.querySelector('[data-course-count]').textContent =
@@ -133,18 +149,55 @@ function renderHero({ tracks, medals }) {
   document.querySelector('[data-race-count]').textContent = s.raceCount;
   document.querySelector('[data-medal-count]').textContent = medals.length;
 
-  if (s.excludedCount > 0) {
-    const note = document.querySelector('[data-excluded-note]');
-    const outside = tracks.runs.filter(r => !r.inSeoul);
-    note.textContent =
-      `※ 서울 기준 집계입니다. 서울 밖에서 달린 ${s.excludedCount}회 ` +
-      `(${outside.map(r => r.date.replace(/-/g, '.')).join(', ')}, ` +
-      `${(s.totalKmAll - s.totalKm).toFixed(1)}km)는 지도와 합계에서 제외했어요.`;
-    note.hidden = false;
+  // 위 숫자와 지도가 서로 다른 범위를 뜻하므로 분명히 적어둔다
+  const note = document.querySelector('[data-excluded-note]');
+  const parts = [];
+  if (months.length) {
+    parts.push(`※ 위 거리는 월별 기록의 합계예요. 아래 지도에는 GPX 가 남아있는 ` +
+               `${s.runCount}회(${s.totalKm}km)만 그렸습니다.`);
   }
+  if (s.excludedCount > 0) {
+    const outside = tracks.runs.filter(r => !r.inSeoul);
+    parts.push(`서울 밖에서 달린 ${s.excludedCount}회` +
+               `(${outside.map(r => r.date.replace(/-/g, '.')).join(', ')})는 지도에서 뺐어요.`);
+  }
+  if (parts.length) { note.textContent = parts.join(' '); note.hidden = false; }
 
-  countUp(document.querySelector('[data-total-km]'), s.totalKm);
+  countUp(document.querySelector('[data-total-km]'), totalKm || s.totalKm);
+  renderMonthBar(months);
   drawHeroTracks(tracks);
+}
+
+/** '2026-08' -> '2026-08-31' */
+function monthEnd(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  return `${ym}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
+}
+
+/** 월별 거리 막대. 기록이 어떻게 쌓였는지 한눈에 보이게. */
+function renderMonthBar(months) {
+  const box = document.querySelector('[data-monthbar]');
+  if (!box || !months.length) return;
+
+  const max = Math.max(...months.map(m => parseFloat(m['거리km']) || 0));
+  box.innerHTML = months.map(m => {
+    const km = parseFloat(m['거리km']) || 0;
+    const label = String(Number(m['연월'].split('-')[1]));
+    return `
+      <div class="monthbar__col" title="${esc(m['연월'])} · ${km}km">
+        <span class="monthbar__km">${km}</span>
+        <div class="monthbar__track">
+          <i style="height:0" data-h="${max ? (km / max) * 100 : 0}"></i>
+        </div>
+        <span class="monthbar__label">${label}월</span>
+      </div>`;
+  }).join('');
+
+  // 화면에 들어오면 차례로 차오르게
+  const bars = box.querySelectorAll('.monthbar__track i');
+  requestAnimationFrame(() => {
+    bars.forEach((b, i) => setTimeout(() => { b.style.height = b.dataset.h + '%'; }, 260 + i * 70));
+  });
 }
 
 /** 누적 거리 숫자가 0 에서 차오르는 연출 */
@@ -440,6 +493,7 @@ function renderMap({ tracks, shoes }) {
         ${c.hasRace ? '<span class="panel__racetag">🏅 RACE</span>' : ''}
       </p>
       <h3 class="panel__title">${esc(c.name)}</h3>
+      ${c.note ? `<p class="panel__note">${esc(c.note)}</p>` : ''}
 
       <div class="panel__figs">
         <div class="panel__fig"><span>LONGEST</span><b>${fmtKm(longest.distanceKm)}</b><i>km</i></div>
