@@ -1021,10 +1021,31 @@ b { font-weight: 700; color: var(--volt); }
 .race__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: clamp(28px, 6vw, 80px);
+  align-items: stretch;
+  gap: clamp(28px, 5vw, 56px);
   padding-bottom: clamp(28px, 5vh, 44px);
   border-bottom: 1px solid var(--line);
+}
+.race__top-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: clamp(20px, 4vh, 32px);
+  flex: 1 1 320px;
+}
+/* 코스 프로필: D-day 옆 카드로. 전체 폭짜리 섹션이던 걸 여기로 줄여 넣었다 */
+.race__top .profile {
+  flex: 1 1 360px;
+  min-width: 280px;
+  padding: 18px 20px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+}
+.profile__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray);
+  margin-bottom: 4px;
 }
 
 .dday { display: flex; align-items: baseline; gap: 4px; }
@@ -1305,15 +1326,26 @@ b { font-weight: 700; color: var(--volt); }
   padding-top: 12px;
   border-top: 1px solid var(--line);
   font-family: var(--font-en);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 900;
   letter-spacing: -.02em;
   color: var(--white);
   text-align: right;
 }
+.week__total em { font-style: normal; font-size: 10px; color: var(--gray-dim); margin-left: 3px; }
+.week__total i {
+  display: block;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--gray-dim);
+  margin-top: 2px;
+}
+.week__total.is-plan { color: var(--gray); }
 
 /* ── 코스 프로필 ── */
-.profile__chart svg { display: block; width: 100%; height: auto; margin-top: 18px; }
+.profile__chart svg { display: block; width: 100%; height: auto; margin-top: 8px; }
 .profile__area { fill: rgba(255,45,85,.10); }
 .profile__line { fill: none; stroke: var(--race); stroke-width: 2; stroke-linejoin: round; }
 .profile__label {
@@ -1331,9 +1363,9 @@ b { font-weight: 700; color: var(--volt); }
   text-anchor: middle;
 }
 .profile__note {
-  margin-top: 16px;
-  font-size: 12.5px;
-  line-height: 1.8;
+  margin-top: 10px;
+  font-size: 11.5px;
+  line-height: 1.65;
   color: var(--gray-dim);
 }
 

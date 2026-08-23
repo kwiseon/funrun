@@ -34,6 +34,16 @@ SIMILARITY_THRESHOLD = 0.40
 # 지도에서 제외할 지역 (서울 밖). bbox 로 판정.
 SEOUL_BBOX = (37.42, 126.76, 37.71, 127.19)  # min_lat, min_lon, max_lat, max_lon
 
+# 지도에 표시하지 않을 좌표 범위. (min_lat, min_lon, max_lat, max_lon)
+# 해당 범위에 들어가는 트랙 포인트는 파싱 단계에서 통째로 제외된다.
+PRIVATE_ZONES = [
+    (37.596, 127.0170, 37.6005, 127.0225),
+]
+
+
+def in_private_zone(lat, lon):
+    return any(z[0] <= lat <= z[2] and z[1] <= lon <= z[3] for z in PRIVATE_ZONES)
+
 # 기록에서 빼기로 한 러닝 (날짜 기준). 지도·집계·코스 목록에서 모두 제외한다.
 # GPX 원본은 map/ 에 그대로 두므로, 여기서 지우면 다시 살아난다.
 EXCLUDED_DATES = set()
@@ -122,6 +132,12 @@ def parse_gpx(path):
     # 첫 <time> 이 metadata 에 있는 경우가 있어 개수로 맞춰본다
     if len(times) > len(points):
         times = times[len(times) - len(points):]
+
+    if PRIVATE_ZONES:
+        keep = [i for i, p in enumerate(points) if not in_private_zone(*p)]
+        if len(keep) != len(points):
+            points = [points[i] for i in keep]
+            times = [times[i] for i in keep]
     return points, times
 
 

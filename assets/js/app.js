@@ -724,7 +724,11 @@ function renderWeeks(training, today) {
     const end = new Date(rows[0]['종료일']);
     const isPast = end < today;
     const isNow = start <= today && today <= end;
+    // 계획이 아니라 실제로 뛴 거리만 센다. 거른 훈련(미진행)은 0으로 취급한다.
+    const started = rows.some(r => r['상태']);
+    const actualKm = rows.reduce((a, r) => a + (parseFloat(r['실제km']) || 0), 0);
     const planKm = rows.reduce((a, r) => a + (parseFloat(r['계획km']) || 0), 0);
+    const totalKm = started ? actualKm : planKm;
     const span = `${fmtMD(rows[0]['시작일'])} — ${fmtMD(rows[0]['종료일'])}`;
 
     return `
@@ -755,7 +759,10 @@ function renderWeeks(training, today) {
               </li>`;
           }).join('')}
         </ul>
-        <p class="week__total">${planKm.toFixed(planKm % 1 ? 1 : 0)} km</p>
+        <p class="week__total ${started ? '' : 'is-plan'}">
+          ${totalKm.toFixed(totalKm % 1 ? 1 : 0)}<em>km</em>
+          ${started ? '' : '<i>예정</i>'}
+        </p>
       </article>`;
   }).join('');
 
@@ -778,7 +785,7 @@ function renderWeeks(training, today) {
 /** 대회 코스 고도 프로필 */
 function renderProfile(profile) {
   if (!profile.length) return;
-  const W = 1000, H = 210, PAD_B = 34, PAD_T = 34, PAD_X = 34;
+  const W = 620, H = 170, PAD_B = 26, PAD_T = 24, PAD_X = 20;
   const maxKm = Math.max(...profile.map(p => parseFloat(p['km'])));
   const maxEl = Math.max(...profile.map(p => parseFloat(p['고도'])));
   const x = km => PAD_X + (km / maxKm) * (W - PAD_X * 2);

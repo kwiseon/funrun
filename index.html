@@ -84,23 +84,10 @@
   </div>
 </section>
 
-<!-- ══════════════════════════════ SHOES ══════════════════════════════ -->
-<section class="section section--shoes" id="shoes">
-  <div class="section__head reveal">
-    <p class="section__index">02</p>
-    <h2 class="section__title">SHOE<br>RACK</h2>
-    <p class="section__desc">
-      귀선과 함께한 신발들. 거리는 <b>GPX 기록이 남아있는 러닝만</b> 합산.
-    </p>
-  </div>
-
-  <div class="rack reveal" data-shoe-rack></div>
-</section>
-
 <!-- ══════════════════════════════ MAP ══════════════════════════════ -->
 <section class="section section--map" id="map">
   <div class="section__head reveal">
-    <p class="section__index">03</p>
+    <p class="section__index">02</p>
     <h2 class="section__title">SEOUL<br>ROUTES</h2>
     <p class="section__desc">
       귀선이 달린 코스들. 선에 마우스를 올리면 자세히 볼 수 있어요.
@@ -131,19 +118,27 @@
 <!-- ══════════════════════════════ NEXT RACE ══════════════════════════════ -->
 <section class="section section--race" id="race">
   <div class="section__head reveal">
-    <p class="section__index">04</p>
+    <p class="section__index">03</p>
     <h2 class="section__title">ROAD TO<br>대청호</h2>
     <p class="section__desc" data-race-desc></p>
   </div>
 
   <div class="race reveal">
-    <!-- D-DAY + 목표 -->
+    <!-- D-DAY + 목표 + 코스 프로필 -->
     <div class="race__top">
-      <div class="dday">
-        <p class="dday__label">D-</p>
-        <p class="dday__num" data-dday>—</p>
+      <div class="race__top-left">
+        <div class="dday">
+          <p class="dday__label">D-</p>
+          <p class="dday__num" data-dday>—</p>
+        </div>
+        <dl class="race__facts" data-race-facts></dl>
       </div>
-      <dl class="race__facts" data-race-facts></dl>
+
+      <div class="profile">
+        <p class="profile__title">코스 프로필</p>
+        <div class="profile__chart" data-profile></div>
+        <p class="profile__note" data-race-note></p>
+      </div>
     </div>
 
     <!-- 훈련 진행률 -->
@@ -170,13 +165,20 @@
       <div class="weeks__scroll" data-weeks tabindex="0" aria-label="주차별 훈련 계획"></div>
     </div>
 
-    <!-- 코스 프로필 -->
-    <div class="profile">
-      <h3 class="growth__title">코스 프로필</h3>
-      <div class="profile__chart" data-profile></div>
-      <p class="profile__note" data-race-note></p>
-    </div>
   </div>
+</section>
+
+<!-- ══════════════════════════════ SHOES ══════════════════════════════ -->
+<section class="section section--shoes" id="shoes">
+  <div class="section__head reveal">
+    <p class="section__index">04</p>
+    <h2 class="section__title">SHOE<br>RACK</h2>
+    <p class="section__desc">
+      귀선과 함께한 신발들. 거리는 <b>GPX 기록이 남아있는 러닝만</b> 합산.
+    </p>
+  </div>
+
+  <div class="rack reveal" data-shoe-rack></div>
 </section>
 
 <footer class="foot">
