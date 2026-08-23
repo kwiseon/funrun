@@ -1,4 +1,4 @@
 id,이름,브랜드,사이즈,상태,사진,크롭,메모
 shoe-01,리액트 이스케이프 런,NIKE,250,은퇴,images/shoes/shoe-01.jpg,"24,15,70,70",
-shoe-02,디비에이트 나이트로 3 화이트실버,PUMA,255,주력,images/shoes/shoe-02.jpg,"9,47,43,43",
+shoe-02,디비에이트 나이트로 3 화이트실버,PUMA,255,보조,images/shoes/shoe-02.jpg,"9,47,43,43",
 shoe-03,젤카야노 33 우먼 D,ASICS,255,주력,images/shoes/shoe-02.jpg,"47,14,44,44",

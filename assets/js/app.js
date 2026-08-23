@@ -478,6 +478,20 @@ function renderMap({ tracks, shoes }) {
     panelBody.hidden = false;
     panelBody.innerHTML = panelHTML(layers[clusterId].cluster);
     panelBody.parentElement.scrollTop = 0;
+
+    const toggle = panelBody.querySelector('[data-log-toggle]');
+    if (toggle) {
+      const rest = panelBody.querySelector('[data-log-rest]');
+      const n = rest.children.length;
+      toggle.addEventListener('click', () => {
+        const open = toggle.getAttribute('aria-expanded') === 'true';
+        rest.hidden = open;
+        toggle.setAttribute('aria-expanded', String(!open));
+        toggle.innerHTML = open
+          ? `<span class="log-toggle__arrow">▸</span> 이전 기록 ${n}개 더 보기`
+          : `<span class="log-toggle__arrow">▾</span> 접기`;
+      });
+    }
   }
 
   function clearFocus() {
@@ -500,24 +514,24 @@ function renderMap({ tracks, shoes }) {
     return Math.max(...d) / Math.min(...d) >= 1.5;
   }
 
-  /** 점점 멀어지는 코스의 단계 목록 */
+  /** 점점 멀어지는 코스의 단계 목록. 줄마다 막대를 쌓으면 세로로 길어져
+   *  패널이 지도보다 아래로 삐져나온다. 한 줄짜리 칩으로 압축한다. */
   function stagesHTML(c, runs) {
     if (!isProgressive(runs)) return '';
     const asc = runs.slice().sort((a, b) => a.distanceKm - b.distanceKm);
-    const max = asc[asc.length - 1].distanceKm;
     const names = c.stages || [];
     return `
       <div class="stages">
         <p class="stages__title">${asc.length}단계로 늘려온 코스</p>
-        ${asc.map((r, i) => `
-          <div class="stage">
-            <span class="stage__no">${i + 1}</span>
-            <div class="stage__body">
-              <div class="stage__bar"><i style="width:${(r.distanceKm / max) * 100}%"></i></div>
-              <p class="stage__name">${esc(names[i] || fmtDate(r.date))}</p>
-            </div>
-            <span class="stage__km">${fmtKm(r.distanceKm)}<em>km</em></span>
-          </div>`).join('')}
+        <div class="stages__row">
+          ${asc.map((r, i) => `
+            <span class="stagechip">
+              <i class="stagechip__no">${i + 1}</i>
+              ${esc(names[i] || fmtDate(r.date))}
+              <b>${fmtKm(r.distanceKm)}</b>
+            </span>
+            ${i < asc.length - 1 ? '<span class="stagechip__arrow">→</span>' : ''}`).join('')}
+        </div>
       </div>`;
   }
 
@@ -544,30 +558,56 @@ function renderMap({ tracks, shoes }) {
       ${stagesHTML(c, runs)}
 
       ${runs.length > 1 && !isProgressive(runs) ? `
-        <p class="panel__repeat">
-          이 코스를 <b>${runs.length}번</b> 달렸어요.
-          가장 길게 달린 날은 ${fmtDate(longest.date)}, <b>${fmtKm(longest.distanceKm)}km</b>.
-        </p>` : ''}
+        <p class="panel__repeat">가장 길게 달린 날 · ${fmtDate(longest.date)}</p>` : ''}
 
+      ${logHTML(runs, shoeName, isProgressive(runs) ? 1 : 2)}`;
+  }
+
+  /** 러닝 기록 하나를 카드로 그린다 */
+  function entryHTML(r, shoeName) {
+    return `
+      <div class="entry">
+        <div class="entry__top">
+          <p class="entry__date">${fmtDate(r.date)}<em>${esc(r.startTime)}</em></p>
+          <p class="entry__stars">${stars(r.rating)}</p>
+        </div>
+        <p class="entry__nums">
+          <b>${fmtKm(r.distanceKm)}</b> KM &nbsp;·&nbsp;
+          <b>${fmtDuration(r.durationSec)}</b> &nbsp;·&nbsp;
+          <b>${fmtPace(r.paceSecPerKm)}</b> /KM
+        </p>
+        ${r.review
+          ? `<p class="entry__review">${esc(r.review)}</p>`
+          : `<p class="entry__review entry__review--empty">아직 후기를 안 적었어요.</p>`}
+        ${r.shoeId ? `<span class="entry__shoe">${esc(shoeName[r.shoeId] || r.shoeId)}</span>` : ''}
+        ${r.photo ? `<img class="entry__photo" src="${esc(r.photo)}" alt="${fmtDate(r.date)} 러닝 사진" loading="lazy">` : ''}
+      </div>`;
+  }
+
+  /** 로그. 같은 코스를 자꾸 반복해서 기록이 3건을 넘어가면 지도 옆
+   *  패널이 계속 늘어나 지도보다 아래로 삐져나온다. 최근 2건만 펼쳐
+   *  두고 나머지는 접어서, 코스를 여러 번 뛰어도 패널 높이가 크게
+   *  안 늘어나게 한다. */
+  function logHTML(runs, shoeName, defaultShown) {
+    // 단계형 코스는 위에 이미 stages 블록이 붙어있어 기본 노출을
+    // 1건으로 줄인다. 그래도 지도 높이를 넘기면 그건 더 줄일 신호다.
+    const shown = runs.slice(0, defaultShown);
+    const rest = runs.slice(defaultShown);
+
+    const shownHTML = shown.map(r => entryHTML(r, shoeName)).join('');
+    if (!rest.length) {
+      return `<div class="panel__log"><p class="panel__logtitle">LOG</p>${shownHTML}</div>`;
+    }
+
+    const restHTML = rest.map(r => entryHTML(r, shoeName)).join('');
+    return `
       <div class="panel__log">
         <p class="panel__logtitle">LOG</p>
-        ${runs.map(r => `
-          <div class="entry">
-            <div class="entry__top">
-              <p class="entry__date">${fmtDate(r.date)}<em>${esc(r.startTime)}</em></p>
-              <p class="entry__stars">${stars(r.rating)}</p>
-            </div>
-            <p class="entry__nums">
-              <b>${fmtKm(r.distanceKm)}</b> KM &nbsp;·&nbsp;
-              <b>${fmtDuration(r.durationSec)}</b> &nbsp;·&nbsp;
-              <b>${fmtPace(r.paceSecPerKm)}</b> /KM
-            </p>
-            ${r.review
-              ? `<p class="entry__review">${esc(r.review)}</p>`
-              : `<p class="entry__review entry__review--empty">아직 후기를 안 적었어요.</p>`}
-            ${r.shoeId ? `<span class="entry__shoe">${esc(shoeName[r.shoeId] || r.shoeId)}</span>` : ''}
-            ${r.photo ? `<img class="entry__photo" src="${esc(r.photo)}" alt="${fmtDate(r.date)} 러닝 사진" loading="lazy">` : ''}
-          </div>`).join('')}
+        ${shownHTML}
+        <button type="button" class="log-toggle" data-log-toggle aria-expanded="false">
+          <span class="log-toggle__arrow">▸</span> 이전 기록 ${rest.length}개 더 보기
+        </button>
+        <div class="log-rest" data-log-rest hidden>${restHTML}</div>
       </div>`;
   }
 

@@ -623,9 +623,7 @@ b { font-weight: 700; color: var(--volt); }
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 20px;
-  /* stretch 로 두면 패널 내용이 지도 높이를 넘어갈 때 잘리거나
-     스스로 스크롤이 생긴다. 각자 필요한 만큼만 차지하게 한다. */
-  align-items: start;
+  align-items: stretch;
 }
 
 .maparea__canvas {
@@ -689,15 +687,17 @@ b { font-weight: 700; color: var(--volt); }
 }
 
 /* ── 상세 패널 ── */
-/* 페이지 스크롤 하나로 충분하다. 코스 내용이 길어져도 패널이
-   자체 스크롤을 갖지 않고 그냥 늘어나게 둔다 (중첩 스크롤 방지). */
+/* 지도 높이에 맞춘다. 로그가 길어지는 건 logHTML() 에서 2건만
+   펼치고 나머지는 토글로 접어 처리하므로, 여기 스크롤은 정말
+   예외적인 경우에만 나오는 안전장치다. */
 .panel {
   display: flex;
   flex-direction: column;
   background: var(--ink);
   border: 1px solid var(--line);
   padding: 26px;
-  min-height: clamp(480px, 78vh, 860px);
+  max-height: clamp(480px, 78vh, 860px);
+  overflow-y: auto;
 }
 
 .panel__empty {
@@ -775,76 +775,59 @@ b { font-weight: 700; color: var(--volt); }
 }
 
 .panel__repeat {
-  margin-top: 18px;
-  padding: 14px 16px;
-  background: rgba(216,255,0,.07);
-  border-left: 2px solid var(--volt);
-  font-size: 12.5px;
-  line-height: 1.7;
-  color: var(--gray);
+  margin-top: 14px;
+  font-size: 11.5px;
+  color: var(--gray-dim);
 }
-.panel__repeat b { color: var(--volt); }
 
-/* 점점 멀어지는 코스의 단계 목록 */
+/* 점점 멀어지는 코스의 단계 목록. 세로로 쌓으면 패널이 지도보다
+   길어져서, 칩을 한 줄로 이어 붙이는 압축된 형태로 둔다. */
 .stages {
-  margin-top: 18px;
-  padding: 16px;
+  margin-top: 16px;
+  padding: 12px 14px;
   background: rgba(216,255,0,.05);
   border-left: 2px solid var(--volt);
 }
 .stages__title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--volt);
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
-.stage {
+.stages__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 11px;
-  padding: 7px 0;
+  gap: 6px;
 }
-.stage__no {
+.stagechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--gray);
+  white-space: nowrap;
+}
+.stagechip__no {
   flex: 0 0 auto;
-  width: 18px; height: 18px;
+  width: 15px; height: 15px;
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
   border-radius: 50%;
+  font-style: normal;
   font-family: var(--font-en);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
-  color: var(--gray);
+  color: var(--gray-dim);
 }
-.stage__body { flex: 1 1 auto; min-width: 0; }
-.stage__bar {
-  height: 4px;
-  background: var(--ink-2);
-  overflow: hidden;
-}
-.stage__bar i {
-  display: block;
-  height: 100%;
-  background: var(--volt);
-  opacity: .8;
-}
-.stage__name {
-  margin-top: 6px;
-  font-size: 11.5px;
-  color: var(--gray);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.stage__km {
-  flex: 0 0 auto;
+.stagechip b {
   font-family: var(--font-en);
-  font-size: 14px;
   font-weight: 900;
+  font-size: 11.5px;
   color: var(--white);
-  font-variant-numeric: tabular-nums;
 }
-.stage__km em { font-style: normal; font-size: 9px; color: var(--gray-dim); margin-left: 2px; }
+.stagechip__arrow { color: var(--gray-dim); font-size: 11px; }
 
 .panel__log { margin-top: 22px; }
 .panel__logtitle {
@@ -857,7 +840,7 @@ b { font-weight: 700; color: var(--volt); }
 }
 
 .entry {
-  padding: 16px 0;
+  padding: 13px 0;
   border-top: 1px solid var(--line);
 }
 .entry:first-child { border-top: none; padding-top: 0; }
@@ -922,6 +905,29 @@ b { font-weight: 700; color: var(--volt); }
   border: 1px solid var(--line);
   display: block;
 }
+
+/* 로그 접기 토글 */
+.log-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-kr);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-dim);
+  cursor: pointer;
+  text-align: left;
+  transition: color .2s;
+}
+.log-toggle:hover { color: var(--volt); }
+.log-toggle__arrow { font-size: 10px; }
+.log-rest .entry:first-child { padding-top: 16px; }
 
 /* ── 코스 목록 (지도 아래) ── */
 .courselist {
@@ -1005,7 +1011,7 @@ b { font-weight: 700; color: var(--volt); }
 @media (max-width: 900px) {
   .maparea { grid-template-columns: 1fr; }
   .maparea__canvas { height: 62vh; }
-  .panel { min-height: 0; }
+  .panel { max-height: none; }
   .legend { font-size: 10.5px; padding: 11px 13px; }
 }
 
