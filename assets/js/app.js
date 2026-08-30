@@ -379,15 +379,17 @@ function renderMap({ tracks, shoes }) {
     scrollWheelZoom: false,   // 스크롤로 페이지를 내리다 지도가 확대되는 걸 막는다
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
-    subdomains: 'abcd',
+  // CARTO의 무료 익명 다크 타일이 API 키를 요구하기 시작해서 Esri Dark Gray Canvas로 교체.
+  // 키 없이 쓸 수 있고, base(지형) + reference(라벨) 2겹 구조도 그대로 유지된다.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '&copy; OpenStreetMap &copy; Esri',
     maxZoom: 19,
+    maxNativeZoom: 16,
   }).addTo(map);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 19,
+    maxNativeZoom: 16,
     opacity: .55,
   }).addTo(map);
 
