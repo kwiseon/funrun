@@ -48,6 +48,14 @@ def in_private_zone(lat, lon):
 # GPX 원본은 map/ 에 그대로 두므로, 여기서 지우면 다시 살아난다.
 EXCLUDED_DATES = set()
 
+# 자동 클러스터링(그리드 겹침도)이 실제로는 같은 코스인데 갈라놓는 경우를 위한
+# 수동 그룹핑. 같은 튜플에 있는 날짜는 겹침도와 상관없이 무조건 한 코스로 묶는다.
+# 같은 코스를 나중에 또 뛰면 그 날짜를 해당 튜플에 추가하면 된다.
+MANUAL_GROUPS = [
+    ("2026-07-24", "2026-08-25"),  # 성북천 이지런
+    ("2026-07-26", "2026-08-29"),  # 성북천 — 마장동 코스 (구 "마장동 코스")
+]
+
 COURSES_CSV = os.path.join(ROOT, "data", "courses.csv")
 
 
@@ -246,6 +254,29 @@ def cluster(runs):
     return groups
 
 
+def cluster_with_manual_groups(runs, manual_groups):
+    """MANUAL_GROUPS 에 지정된 날짜들을 겹침도 계산 없이 강제로 한 그룹으로 묶는다.
+    나머지 러닝만 기존 cluster() 로 자동 클러스터링한다."""
+    date_to_index = {r["date"]: i for i, r in enumerate(runs)}
+    manual_index_sets = []
+    manual_indices = set()
+
+    for dates in manual_groups:
+        idxs = [date_to_index[d] for d in dates if d in date_to_index]
+        if len(idxs) < 2:
+            continue  # 아직 짝이 없으면(예: 상대 러닝이 아직 없음) 건너뛴다
+        manual_indices.update(idxs)
+        manual_index_sets.append(idxs)
+        print(f"  manual: {' + '.join(runs[i]['date'] for i in idxs)}")
+
+    auto_pool = [i for i in range(len(runs)) if i not in manual_indices]
+    auto_runs = [runs[i] for i in auto_pool]
+    auto_groups_local = cluster(auto_runs)
+    auto_groups = [[auto_pool[li] for li in g] for g in auto_groups_local]
+
+    return manual_index_sets + auto_groups
+
+
 # ---------------------------------------------------------------- 메인
 
 def in_seoul(bbox):
@@ -401,7 +432,7 @@ def main():
               f"{'서울' if in_seoul(bbox) else '서울 밖'}")
 
     print("\n코스 클러스터링...")
-    groups = cluster(runs)
+    groups = cluster_with_manual_groups(runs, MANUAL_GROUPS)
 
     courses = load_courses()
     clusters = []

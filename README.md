@@ -120,6 +120,13 @@ python3 build/build.py
 `data/tracks.json` 이 새로 만들어지고, `data/runs.csv` 에 새 날짜 행이
 자동으로 추가됩니다. 기존에 적어둔 만족도·한줄평은 그대로 보존됩니다.
 
+Python이 없는 환경(이 컴퓨터가 그렇습니다 — `python3`가 마이크로소프트 스토어
+stub만 가리킵니다)이면 `build/build.js` 로 대신 빌드합니다. 로직은 동일합니다.
+
+```bash
+node build/build.js
+```
+
 ## 메달 사진을 추가하려면
 
 `images/medals/` 에 넣고 `data/medals.csv` 에 한 줄 추가.
@@ -200,6 +207,7 @@ data/training.csv       ← ⑥ 대청호 훈련 계획
 data/race.csv           ← 대회 정보와 목표
 data/race_profile.csv   ← 대회 코스 고도
 build/build.py          GPX → tracks.json + runs.csv 동기화
+build/build.js          build.py 의 Node 포트. Python 없을 때 씀 (로직 동일)
 build/clean_medal_bg.py 메달 PNG 체커보드 배경 제거
 build/trim_medals.py    메달 PNG 투명 여백 잘라내기
 build/fit_medals.py     메달이 비슷한 크기로 보이게 리본 길이 맞추기
