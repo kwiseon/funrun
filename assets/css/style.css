@@ -936,7 +936,7 @@ b { font-weight: 700; color: var(--volt); }
   margin: 12px 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   background: var(--line);
   border: 1px solid var(--line);
@@ -1013,11 +1013,13 @@ b { font-weight: 700; color: var(--volt); }
   .maparea__canvas { height: 62vh; }
   .panel { max-height: none; }
   .legend { font-size: 10.5px; padding: 11px 13px; }
+  .courselist { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 560px) {
   .hero__stats { gap: 24px 36px; }
   .medal__note { opacity: 1; }
+  .courselist { grid-template-columns: 1fr; }
 }
 
 /* ════════════════════════════ NEXT RACE ════════════════════════════ */
